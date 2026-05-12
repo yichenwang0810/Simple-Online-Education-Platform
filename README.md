@@ -1,4 +1,4 @@
-# Simple-Online-Education-Platform
+# Online-Education-Platform
 This platform represents a Learning Management System (LMS) designed for scalability.
 
 Technology Stack Frontend: Vue.js 3 (with Vite), Element UI (for interface components), Axios (for API requests). Backend: Java Spring Boot (for business logic), MyBatis Plus (for database interaction). Database: MySQL (for relational data like users and courses). Storage: Local storage or Cloud OSS (for video/document hosting).
