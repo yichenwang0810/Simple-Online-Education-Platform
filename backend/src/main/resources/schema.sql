@@ -18,3 +18,14 @@ CREATE TABLE IF NOT EXISTS `comment` (
   `gmt_create` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Create Course Student Relation Table (Enrollment)
+CREATE TABLE IF NOT EXISTS `course_student` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `course_id` bigint(20) NOT NULL,
+  `student_id` bigint(20) NOT NULL,
+  `status` varchar(20) DEFAULT 'ENROLLED', -- ENROLLED, COMPLETED
+  `gmt_create` datetime DEFAULT CURRENT_TIMESTAMP,
+  `gmt_modified` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
