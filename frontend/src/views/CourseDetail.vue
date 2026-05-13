@@ -20,7 +20,9 @@
             <h2>About this course</h2>
             <p><strong>Price:</strong> ¥{{ course.price }}</p>
             <p><strong>Views:</strong> {{ course.viewCount }}</p>
+            <p v-if="averageRating > 0"><strong>Rating:</strong> {{ averageRating.toFixed(1) }}/5 ⭐</p>
             <button @click="addToCart" class="buy-button">Add to Cart</button>
+            <button @click="enroll" class="enroll-button">Enroll Now</button>
           </div>
         </section>
 
@@ -54,7 +56,11 @@
       <div class="modal-content" @click.stop>
         <span class="close" @click="closeModal">&times;</span>
         <h3>{{ currentLesson.title }}</h3>
-        <VideoPlayer :video-url="currentLesson.videoUrl" />
+        <VideoPlayer
+          :video-url="currentLesson.videoUrl"
+          :lesson-id="currentLesson.id"
+          :initial-time="currentLesson.lastWatchedTime || 0"
+        />
       </div>
     </div>
   </div>
@@ -75,23 +81,25 @@ export default {
       comments: [],
       chapters: [],
       activeTab: 'overview',
-      currentLesson: null
+      currentLesson: null,
+      averageRating: 0
     };
   },
   mounted() {
     const courseId = this.$route.params.id;
     this.fetchCourseDetails(courseId);
     this.fetchCourseChapters(courseId);
-    // Mock comments
-    this.comments = [
-      { id: 1, userName: 'Alice', rating: 5, content: 'Excellent course!' },
-      { id: 2, userName: 'Bob', rating: 4, content: 'Very informative.' }
-    ];
+    this.fetchComments(courseId);
   },
   methods: {
     async fetchCourseDetails(id) {
-      // Use the centralized API function
-      this.course = await getCourseDetail(id);
+      try {
+        const response = await axios.get(`http://localhost:8080/api/courses/${id}`);
+        this.course = response.data.course;
+        this.averageRating = response.data.averageRating;
+      } catch (error) {
+        console.error('Error fetching course details:', error);
+      }
     },
     async fetchCourseChapters(courseId) {
       try {
@@ -112,8 +120,16 @@ export default {
       const response = await axios.get(`http://localhost:8080/api/content/lessons/chapter/${chapterId}`);
       return response.data;
     },
+    async fetchComments(courseId) {
+      try {
+        const response = await axios.get(`http://localhost:8080/api/comments/course/${courseId}`);
+        this.comments = response.data;
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+      }
+    },
     addToCart() {
-      const userId = 1; // In a real app, get this from logged-in user context
+      const userId = localStorage.getItem('userId') || 1; // Get from auth context
       const cartItem = {
         userId: userId,
         courseId: this.course.id,
@@ -125,8 +141,33 @@ export default {
         .then(() => alert('Added to cart!'))
         .catch(err => console.error(err));
     },
+    enroll() {
+      const userId = localStorage.getItem('userId') || 1;
+      axios.post('http://localhost:8080/api/enrollment', {
+        studentId: userId,
+        courseId: this.course.id
+      })
+      .then(() => alert('Enrolled successfully!'))
+      .catch(err => console.error('Enrollment failed:', err));
+    },
     playLesson(lesson) {
       this.currentLesson = lesson;
+      // Load progress for this lesson
+      this.loadLessonProgress(lesson.id);
+    },
+    async loadLessonProgress(lessonId) {
+      try {
+        const userId = localStorage.getItem('userId') || 1;
+        const response = await axios.get(`http://localhost:8080/api/progress/lesson/${userId}/${lessonId}`);
+        if (response.data) {
+          this.currentLesson.lastWatchedTime = response.data.lastWatchedTime || 0;
+        } else {
+          this.currentLesson.lastWatchedTime = 0;
+        }
+      } catch (error) {
+        console.error('Error loading lesson progress:', error);
+        this.currentLesson.lastWatchedTime = 0;
+      }
     },
     closeModal() {
       this.currentLesson = null;

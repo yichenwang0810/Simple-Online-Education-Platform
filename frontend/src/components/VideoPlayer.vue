@@ -20,6 +20,7 @@
 
 <script>
 import { ref, onMounted, onUnmounted } from 'vue';
+import axios from 'axios';
 
 export default {
   name: 'VideoPlayer',
@@ -31,6 +32,10 @@ export default {
     initialTime: {
       type: Number,
       default: 0
+    },
+    lessonId: {
+      type: Number,
+      required: true
     }
   },
   setup(props) {
@@ -38,24 +43,59 @@ export default {
     const currentTime = ref(0);
     const duration = ref(0);
     const progressPercentage = ref(0);
+    let progressUpdateTimer = null;
 
     const onTimeUpdate = () => {
       if (videoRef.value) {
         currentTime.value = videoRef.value.currentTime;
         duration.value = videoRef.value.duration || 0;
         progressPercentage.value = (currentTime.value / duration.value) * 100;
+
+        // Throttle progress updates to avoid too many API calls
+        if (!progressUpdateTimer) {
+          progressUpdateTimer = setTimeout(() => {
+            updateProgress();
+            progressUpdateTimer = null;
+          }, 5000); // Update every 5 seconds
+        }
       }
     };
 
-    const onVideoEnd = () => {
+    const updateProgress = async () => {
+      try {
+        const userId = localStorage.getItem('userId') || 1;
+        await axios.post('http://localhost:8080/api/progress/lesson', {
+          studentId: userId,
+          lessonId: props.lessonId,
+          progressPercentage: Math.round(progressPercentage.value),
+          lastWatchedTime: Math.round(currentTime.value)
+        });
+      } catch (error) {
+        console.error('Error updating progress:', error);
+      }
+    };
+
+    const onVideoEnd = async () => {
       console.log("Video completed!");
-      // Here you could trigger a notification or move to the next lesson
+      // Mark as completed
+      try {
+        const userId = localStorage.getItem('userId') || 1;
+        await axios.post(`http://localhost:8080/api/progress/lesson/${userId}/${props.lessonId}/complete`);
+      } catch (error) {
+        console.error('Error marking lesson complete:', error);
+      }
     };
 
     // Restore play position when component mounts
     onMounted(() => {
       if (videoRef.value) {
         videoRef.value.currentTime = props.initialTime;
+      }
+    });
+
+    onUnmounted(() => {
+      if (progressUpdateTimer) {
+        clearTimeout(progressUpdateTimer);
       }
     });
 

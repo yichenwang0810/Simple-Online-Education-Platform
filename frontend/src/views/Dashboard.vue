@@ -8,7 +8,7 @@
       </div>
       <div class="card">
         <h3>Certificates</h3>
-        <p class="number">0</p>
+        <p class="number">{{ certificatesCount }}</p>
       </div>
     </div>
 
@@ -24,22 +24,53 @@
           <div class="progress" :style="{ width: course.progress + '%' }"></div>
         </div>
         <p>{{ course.progress }}% Completed</p>
-        <button>Continue Learning</button>
+        <button @click="continueCourse(course.id)">Continue Learning</button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
-      enrolledCount: 2, // Mock data
-      myCourses: [
-        { id: 1, title: 'Java Masterclass', progress: 45 },
-        { id: 2, title: 'Vue.js for Beginners', progress: 10 }
-      ]
+      enrolledCount: 0,
+      certificatesCount: 0,
+      myCourses: []
     };
+  },
+  mounted() {
+    this.loadDashboardData();
+  },
+  methods: {
+    async loadDashboardData() {
+      try {
+        // Get current user ID from localStorage or auth context
+        const userId = localStorage.getItem('userId') || 1; // Default to 1 for demo
+
+        // Fetch enrolled courses
+        const response = await axios.get(`http://localhost:8080/api/enrollment/my-courses/${userId}`);
+        this.myCourses = response.data.map(item => ({
+          id: item.enrollment.courseId,
+          title: `Course ${item.enrollment.courseId}`, // In real app, fetch course details
+          progress: item.progress
+        }));
+        this.enrolledCount = this.myCourses.length;
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        // Fallback to mock data
+        this.myCourses = [
+          { id: 1, title: 'Java Masterclass', progress: 45 },
+          { id: 2, title: 'Vue.js for Beginners', progress: 10 }
+        ];
+        this.enrolledCount = 2;
+      }
+    },
+    continueCourse(courseId) {
+      this.$router.push(`/course/${courseId}`);
+    }
   }
 };
 </script>
