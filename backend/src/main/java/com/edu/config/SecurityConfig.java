@@ -28,14 +28,14 @@ public class SecurityConfig {
         http
             .cors().and() // Enable CORS
             .csrf().disable() // Disable CSRF for simplicity in this demo
-            .authorizeHttpRequests(auth -> auth
+            .authorizeRequests()
                 // Public endpoints
-                .requestMatchers("/api/courses/**", "/api/auth/**").permitAll()
+                .antMatchers("/api/courses/**", "/api/auth/**").permitAll()
                 // Protected endpoints (requires login)
-                .requestMatchers("/api/teacher/**").hasRole("TEACHER")
+                .antMatchers("/api/teacher/**").hasRole("TEACHER")
                 // All other requests require authentication
                 .anyRequest().authenticated()
-            )
+            .and()
             .httpBasic(); // Use Basic Auth for this demo
 
         return http.build();
